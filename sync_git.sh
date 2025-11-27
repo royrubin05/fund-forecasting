@@ -19,6 +19,13 @@ if ! command -v gh &> /dev/null; then
     echo -e "${BLUE}⚠️  GitHub CLI not found. Attempting install via Homebrew...${NC}"
     if command -v brew &> /dev/null; then
         brew install gh
+        
+        if ! command -v gh &> /dev/null; then
+             echo -e "${RED}❌ Failed to install GitHub CLI.${NC}"
+             echo -e "Please run the following command to fix your Homebrew permissions, then try again:"
+             echo -e "${BLUE}sudo chown -R \$(whoami) /usr/local/var/log${NC}"
+             exit 1
+        fi
     else
         echo -e "${RED}❌ Homebrew not found. Please install GitHub CLI manually: https://cli.github.com/${NC}"
         exit 1
