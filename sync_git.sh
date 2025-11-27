@@ -53,18 +53,37 @@ fi
 
 # Check if remote exists
 if ! git remote | grep -q "origin"; then
-    echo -e "${BLUE}📂 Creating private repository on GitHub...${NC}"
-    REPO_NAME=$(basename "$PWD")
-    # Create repo and set remote
-    gh repo create "$REPO_NAME" --private --source=. --remote=origin
+    echo -e "${BLUE}🔗 Repository Setup${NC}"
+    echo -e "Do you have an existing GitHub repository URL to link to? (e.g., https://github.com/user/repo)"
+    read -p "Enter URL (or press Enter to create a new private repo): " REPO_URL
+
+    if [ -n "$REPO_URL" ]; then
+        echo -e "${BLUE}🔗 Linking to existing repository: $REPO_URL${NC}"
+        git remote add origin "$REPO_URL"
+        # Fetch to ensure we don't overwrite history if it exists
+        git fetch origin
+        # Set upstream to main (assuming main)
+        git branch -u origin/main main
+    else
+        echo -e "${BLUE}📂 Creating new private repository on GitHub...${NC}"
+        REPO_NAME=$(basename "$PWD")
+        gh repo create "$REPO_NAME" --private --source=. --remote=origin
+    fi
 else
-    echo -e "${GREEN}✅ Repository already linked.${NC}"
+    echo -e "${GREEN}✅ Repository already linked to: $(git remote get-url origin)${NC}"
 fi
 
 # 5. Push Changes
 echo -e "${BLUE}⬆️  Pushing changes...${NC}"
 git add .
 git commit -m "Update: $(date '+%Y-%m-%d %H:%M:%S')"
+
+# Handle potential merge conflicts if linking to existing repo
+if [ -n "$REPO_URL" ]; then
+     echo -e "${BLUE}⬇️  Pulling latest changes first...${NC}"
+     git pull origin main --rebase
+fi
+
 git push -u origin main
 
 echo -e "${GREEN}✅ Success! Your code is synced to GitHub.${NC}"
