@@ -51,7 +51,17 @@ if [ ! -d ".git" ]; then
     git branch -M main
 fi
 
-# Check if remote exists
+# Check if remote exists and ask to reset
+if git remote | grep -q "origin"; then
+    CURRENT_URL=$(git remote get-url origin)
+    echo -e "${BLUE}ℹ️  Current remote: $CURRENT_URL${NC}"
+    read -p "Do you want to change this repository URL? (y/N): " CHANGE_REPO
+    if [[ "$CHANGE_REPO" =~ ^[Yy]$ ]]; then
+        git remote remove origin
+    fi
+fi
+
+# Check if remote exists (again, in case we removed it)
 if ! git remote | grep -q "origin"; then
     echo -e "${BLUE}🔗 Repository Setup${NC}"
     echo -e "Do you have an existing GitHub repository URL to link to? (e.g., https://github.com/user/repo)"
