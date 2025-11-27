@@ -1,6 +1,9 @@
+import { Investment, FundAssumptions, CashFlowPoint } from '../types';
+
 export interface CashFlow {
     year: number;
-import { Investment, FundAssumptions, CashFlowPoint } from '../types';
+    amount: number;
+}
 
 export function calculateTVPI(paidIn: number, distributed: number, nav: number): number {
     if (paidIn === 0) return 0;
@@ -43,9 +46,30 @@ export function generateProjections(
     assumptions: FundAssumptions,
     fundTermYears: number = 10
 ): CashFlowPoint[] {
-    // Unrealized Gains: We need to model growth curve.
-    // Let's assume linear growth to exit multiple for simplicity.
+    // Initialize yearly flows
+    const yearlyFlows = Array.from({ length: fundTermYears + 1 }, (_, i) => ({
+        year: i,
+        call: 0,
+        distribution: 0,
+        nav: 0
+    }));
 
+    // Aggregate investment flows
+    investments.forEach(inv => {
+        // Capital Calls (Entry)
+        if (inv.entryYear <= fundTermYears) {
+            yearlyFlows[inv.entryYear].call += inv.checkSize + inv.reserves;
+        }
+
+        // Distributions (Exit)
+        if (inv.exitYear > 0 && inv.exitYear <= fundTermYears) {
+            // Simple model: exit value = cost * realizedMultiple
+            const exitValue = (inv.checkSize + inv.reserves) * inv.realizedMultiple;
+            yearlyFlows[inv.exitYear].distribution += exitValue;
+        }
+    });
+
+    // Calculate cumulative values and NAV
     let cumulativeInvested = 0;
     let cumulativeDistributed = 0;
 
@@ -53,9 +77,17 @@ export function generateProjections(
         cumulativeInvested += yf.call;
         cumulativeDistributed += yf.distribution;
 
-        // Hacky NAV: Assume unexited investments are growing linearly
-        // This requires iterating investments again per year.
-        // Let's stick to the flows for the J-Curve first.
+        // Simple NAV calculation: Cumulative Invested - Cumulative Distributed (very basic)
+        // In a real model, we'd add unrealized value growth here.
+        // For now, let's just use a placeholder NAV logic or 0 if not modeled fully yet.
+        // Let's assume NAV is remaining cost * unrealizedMultiple for active investments
+        let currentNav = 0;
+        investments.forEach(inv => {
+            if (inv.entryYear <= yf.year && (inv.exitYear === 0 || inv.exitYear > yf.year)) {
+                // Investment is active
+                currentNav += (inv.checkSize + inv.reserves) * inv.unrealizedMultiple;
+            }
+        });
 
         return {
             year: yf.year,
@@ -64,6 +96,7 @@ export function generateProjections(
             netCashFlow: yf.distribution - yf.call,
             cumulativeCall: cumulativeInvested,
             cumulativeDistribution: cumulativeDistributed,
+            nav: currentNav
         };
     });
 
