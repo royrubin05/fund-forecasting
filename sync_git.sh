@@ -27,7 +27,12 @@ fi
 
 # 3. Authenticate
 echo -e "${BLUE}🔐 Checking GitHub authentication...${NC}"
-if ! gh auth status &> /dev/null; then
+if gh auth status &> /dev/null; then
+    # Already logged in
+    CURRENT_USER=$(gh api user -q .login)
+    echo -e "${GREEN}✅ Already logged in as: ${CURRENT_USER}${NC}"
+else
+    # Not logged in
     echo -e "${BLUE}⚠️  Not logged in. Initiating login...${NC}"
     echo -e "👉 Select 'GitHub.com', 'HTTPS', and 'Login with a web browser'"
     gh auth login
